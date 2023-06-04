@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from .models import *
 
+
 @api_view(['POST'])
 def uploadStoresFromCsv(request):
     file = request.FILES['file']
@@ -17,17 +18,14 @@ def uploadStoresFromCsv(request):
     reader = csv.DictReader(decoded_file)
 
     objs = []
-    batch_size = 1000
-    for row in reader:
-        print(type(row['store_id']))
-        print(type(row['timezone_str']))
-        objs.append(Store(store_id= int(row['store_id']), timezone_str=row['timezone_str']))
+    store_keys = {}
 
-    while True:
-        batch = list(islice(objs, batch_size))
-        if not batch:
-            break
-        Store.objects.bulk_create(batch, batch_size)
+    for row in reader:
+        if store_keys.get(row['store_id']) is None:
+            objs.append(Store(store_id=int(row['store_id']), timezone_str=row['timezone_str']))
+            store_keys[row['store_id']] = ""
+
+    Store.objects.bulk_create(objs)
 
     return HttpResponse("Successful.")
 
