@@ -55,6 +55,33 @@ def uploadStatusfromcsv(request):
         decoded_file = file.read().decode('utf-8').splitlines()
         reader = csv.DictReader(decoded_file)
 
+        objs = []
+        store_keys = {}
+        store_id_list = list(Store.objects.values_list('store_id', flat=True))
+        print(store_id_list)
+
+        count= 0
+        for row in reader:
+            store_id = row['store_id']
+            timestamp_utc = row['timestamp_utc']
+            status = row['status']
+            status_ = False;
+            if status == "active":
+                status_ = True
+
+            store_key = str(store_id) + "@" + str(timestamp_utc)
+            if store_key not in store_keys:
+                if store_id not in store_id_list:
+                    count = count+1
+
+                    # push data into database
+
+                objs.append(Status(store_id=int(store_id), status = status_, timestamp=timestamp_utc))
+                store_keys[store_key] = True
+        print(count)
+        Status.objects.bulk_create(objs)
+        return HttpResponse("Successful.")
+
     except Exception as e:
         print("Exception: ", e)
         return HttpResponse("Some exception occoured.")
